@@ -2,8 +2,56 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
-#include <stdlib.h>
+#define SIZE_ETHERNET 14
+#define PCKT_LEN 1024
+
+/* IP header */
+struct sniff_ip
+{
+	unsigned ip_vhl;			   /* version << 4 | header length >> 2 */
+	unsigned ip_tos;			   /* type of service */
+	unsigned ip_len;			   /* total length */
+	unsigned ip_id;				   /* identification */
+	unsigned ip_off;			   /* fragment offset field */
+#define IP_RF 0x8000			   /* reserved fragment flag */
+#define IP_DF 0x4000			   /* dont fragment flag */
+#define IP_MF 0x2000			   /* more fragments flag */
+#define IP_OFFMASK 0x1fff		   /* mask for fragmenting bits */
+	unsigned ip_ttl;			   /* time to live */
+	unsigned ip_p;				   /* protocol */
+	unsigned short ip_sum;		   /* checksum */
+	struct in_addr ip_src, ip_dst; /* source and dest address */
+};
+#define IP_HL(ip) (((ip)->ip_vhl) & 0x0f)
+#define IP_V(ip) (((ip)->ip_vhl) >> 4)
+
+struct sniff_icmp{
+	#define ICMP_ECHO_REQ 8
+	#define ICMP_ECHO_RES 0
+	#define ICMP_HDR_LEN 4
+ 	unsigned char icmp_type;
+ 	unsigned char icmp_code;
+ 	unsigned short icmp_cksum;		/* icmp checksum */
+ 	unsigned short icmp_id;				/* icmp identifier */
+ 	unsigned short icmp_seq;			/* icmp sequence number */
+};
+
+#define DATALEN (PCKT_LEN - sizeof(struct sniff_icmp) - sizeof(struct sniff_ip))
+
+struct icmp_pckt{
+	struct sniff_ip ip_hdr;
+    ip = (struct sniff_ip*)(packet + SIZE_ETHERNET);
+    printf("%d",ip->ip_p);
+	struct sniff_icmp icmp_hdr;
+	char echoData[DATALEN];
+} icmp_packet;
+
+typedef struct icmp_pckt ICMP_Packet;
+
 void got_packet(u_char *args, const struct pcap_pkthdr *header,const u_char *packet){
+    struct sniff_ip* ip;
+    struct sniff_icmp* icmp;
+    
     printf("Got a packet");
 }
 
