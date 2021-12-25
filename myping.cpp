@@ -91,7 +91,7 @@ int main ()
     struct sockaddr_in dest_in;
     memset (&dest_in, 0, sizeof (struct sockaddr_in));
     dest_in.sin_family = AF_INET;
-    
+    dest_in.sin_addr.s_addr = inet_addr(DESTINATION_IP);
     // Create raw socket for IP-RAW (make IP-header by yourself)
     int sock = -1;
     if ((sock = socket (AF_INET, SOCK_RAW, IPPROTO_ICMP)) == -1) 
