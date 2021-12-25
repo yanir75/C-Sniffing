@@ -2,6 +2,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
+#include <stdlib.h>
 #define SIZE_ETHERNET 14
 #define PCKT_LEN 1024
 
