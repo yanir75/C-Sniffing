@@ -1,20 +1,13 @@
+#include <pcap.h>
+#include <netinet/in.h>
 #include <arpa/inet.h>
-#include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <netinet/ether.h>
-#include <linux/if_packet.h>
-#ifndef SIZE_ETHERNET
 #define SIZE_ETHERNET 14
-#endif
 #define PCKT_LEN 1024
 
-
-
-
-
-/* IP header */
-typedef struct sniff_ip 
+// IP header
+struct sniff_ip 
 {
         u_char  ip_vhl;                 /* version << 4 | header length >> 2 */
         u_char  ip_tos;                 /* type of service */
@@ -29,13 +22,14 @@ typedef struct sniff_ip
         u_char  ip_p;                   /* protocol */
         u_short ip_sum;                 /* checksum */
         struct  in_addr ip_src,ip_dst;  /* source and dest address */
-}iph;
+};
+#define IP_HL(ip)               (((ip)->ip_vhl) & 0x0f)
+#define IP_V(ip)                (((ip)->ip_vhl) >> 4)
+
 #define IP_HL(ip) (((ip)->ip_vhl) & 0x0f)
 #define IP_V(ip) (((ip)->ip_vhl) >> 4)
 
-
-
-typedef struct sniff_icmp{
+struct sniff_icmp{
 	#define ICMP_ECHO_REQ 8
 	#define ICMP_ECHO_RES 0
 	#define ICMP_HDR_LEN 4
@@ -44,35 +38,42 @@ typedef struct sniff_icmp{
  	unsigned short icmp_cksum;		/* icmp checksum */
  	unsigned short icmp_id;				/* icmp identifier */
  	unsigned short icmp_seq;			/* icmp sequence number */
-}icmph;
+};
 
-void got_packet(unsigned char* buffer, int size)
-{
-    iph *ip;
-    ip= (iph*)(buffer+SIZE_ETHERNET);
-    printf("src:%s\ndst:%s\n",inet_ntoa(ip->ip_src),inet_ntoa(ip->ip_dst));
-
-
-    
+void got_packet(u_char *args, const struct pcap_pkthdr *header,const u_char *packet){
+    struct sniff_ip* ip;
+    struct sniff_icmp* icmp;
+    ip = (struct sniff_ip*)(packet+SIZE_ETHERNET);
+    printf("%s",inet_ntoa(ip->ip_src));
+	printf("%s",inet_ntoa(ip->ip_dst));
+    printf("Got a packet");
 }
 
-int main(int argc, char *argv[]) {
-
-    int sock;
-    if ((sock = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) == -1) {
-        perror("could not create socket");
-        return -1;
+int main()
+{
+    pcap_t *handle;
+    char errbuff[PCAP_ERRBUF_SIZE];
+    char filter_exp[] = "ip proto ICMP";
+    struct bpf_program filter;
+    bpf_u_int32 net;
+    
+    handle = pcap_open_live("eth0",PCKT_LEN,1,1000,errbuff);
+    if(handle == NULL)
+    {
+        printf("%s\n",errbuff);
+        exit(1);
     }
-
-    struct packet_mreq mr;
-    mr.mr_type = PACKET_MR_PROMISC;
-    setsockopt(sock, SOL_PACKET, PACKET_ADD_MEMBERSHIP, &mr, sizeof(mr));
-    struct sockaddr dest_in;
-    socklen_t len = sizeof(dest_in);
-    char buf[1024];
-    while(1) {
-        bzero(buf, 1024);
-        int rc = recvfrom(sock, buf, ETH_FRAME_LEN, 0, &dest_in, &len);
-        got_packet(buf, rc);
+    if(pcap_compile(handle,&filter,filter_exp,0,net)==-1)
+        {
+            printf("bad filter\n");
+            exit(1);
+        }
+    if(pcap_setfilter(handle,&filter)==-1)
+    {
+        printf("failed to set filter");
+        exit(1);
     }
+    pcap_loop(handle,-1,got_packet,NULL);
+    return 0;
+
 }
