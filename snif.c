@@ -37,20 +37,10 @@ struct sniff_icmp{
  	unsigned short icmp_seq;			/* icmp sequence number */
 };
 
-#define DATALEN (PCKT_LEN - sizeof(struct sniff_icmp) - sizeof(struct sniff_ip))
-
-struct icmp_pckt{
-	struct sniff_ip ip_hdr;
-	struct sniff_icmp icmp_hdr;
-	char echoData[DATALEN];
-} icmp_packet;
-
-typedef struct icmp_pckt ICMP_Packet;
-
 void got_packet(u_char *args, const struct pcap_pkthdr *header,const u_char *packet){
     struct sniff_ip* ip;
     struct sniff_icmp* icmp;
-    ip = (struct sniff_ip*)(packet + SIZE_ETHERNET);
+    ip = (struct sniff_ip*)(packet);
     printf("%s",inet_ntoa(ip->ip_src));
 	printf("%s",inet_ntoa(ip->ip_dst));
     printf("Got a packet");
