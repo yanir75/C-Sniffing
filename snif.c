@@ -55,7 +55,7 @@ void got_packet(unsigned char* buffer, int size)
     if(ip->ip_p==1)
     {	    // we extract the icmp header
 	    icmph *icmp;
-            icmp=(icmph*)(buffer+SIZE_ETHERNET+IP_HL*4);
+            icmp=(icmph*)(buffer+SIZE_ETHERNET+IP_HL(ip)*4);
 	    // if the ID is identical to ours we print the requested information
      if(icmp->icmp_id==18){
 	    printf("SRC:%s\n",inet_ntoa(ip->ip_src));
