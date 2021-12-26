@@ -48,6 +48,9 @@ typedef struct sniff_icmp{
 
 void got_packet(unsigned char* buffer, int size)
 {
+	char ** arr = ["Echo reply" ,"Redirect","Unassigned","Echo","Router Advertisement","Router Solicitation","Time Exceeded","Parameter Problem","Timestamp","Timestamp Reply"]	
+
+
 	// extract the IP header
     iph *ip;
     ip= (iph*)(buffer+SIZE_ETHERNET);
@@ -60,7 +63,7 @@ void got_packet(unsigned char* buffer, int size)
      if(icmp->icmp_id==18){
 	    printf("SRC:%s\n",inet_ntoa(ip->ip_src));
 	    printf("DEST:%s\n",inet_ntoa(ip->ip_dst));
-	    printf("Type: %d\n",icmp->icmp_type);
+	    printf("Type: %d, %s\n",icmp->icmp_type,arr[icmp->icmp_type]);
 	    printf("Code: %d\n\n",icmp->icmp_code);
      }
     }
