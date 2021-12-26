@@ -84,7 +84,7 @@ int main(int argc, char *argv[]) {
     mr.mr_type = PACKET_MR_PROMISC;
     setsockopt(sock, SOL_PACKET, PACKET_ADD_MEMBERSHIP, &mr, sizeof(mr));
 	// creating sock addr for the recv
-	printf("listening\n\n);
+	printf("listening\n\n");
     struct sockaddr dest_in;
     socklen_t len = sizeof(dest_in);
 	// buff saves the repsponse
