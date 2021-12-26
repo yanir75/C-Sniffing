@@ -83,8 +83,8 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header,
 	struct sniff_ip* ip;
 	struct sniff_icmp* icmp;
 	eth = (struct sniff_ethernet*)(packet);
-	ip=(struct sniff_ip*)(packet+ETHERNET_SIZE);
-	icmp = (struct sniff_icmp*)(packet+ETHERNET_SIZE+IP_LEN);
+	ip=(struct sniff_ip*)(packet+SIZE_ETHERNET);
+	icmp = (struct sniff_icmp*)(packet+SIZE_ETHERNET+IP_LEN);
 	printf("%s\n",inet_ntoa(ip->ip_src));
 	printf("%s\n",inet_ntoa(ip->ip_dest));
 	printf("%d\n",icmp->icmp_type);
