@@ -2,9 +2,12 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <string.h>
-#include <stdlib.h>
+#include <stdio.h>
 #define SIZE_ETHERNET 14
+#define ETHER_ADDR_LEN 6
 #define PCKT_LEN 1024
+#define IP_LEN 20
+
 
 // IP header
 struct sniff_ip 
@@ -26,8 +29,6 @@ struct sniff_ip
 #define IP_HL(ip)               (((ip)->ip_vhl) & 0x0f)
 #define IP_V(ip)                (((ip)->ip_vhl) >> 4)
 
-#define IP_HL(ip) (((ip)->ip_vhl) & 0x0f)
-#define IP_V(ip) (((ip)->ip_vhl) >> 4)
 
 struct sniff_icmp{
 	#define ICMP_ECHO_REQ 8
@@ -39,41 +40,43 @@ struct sniff_icmp{
  	unsigned short icmp_id;				/* icmp identifier */
  	unsigned short icmp_seq;			/* icmp sequence number */
 };
-
-void got_packet(u_char *args, const struct pcap_pkthdr *header,const u_char *packet){
-    struct sniff_ip* ip;
-    struct sniff_icmp* icmp;
-    ip = (struct sniff_ip*)(packet+SIZE_ETHERNET);
-    printf("%s",inet_ntoa(ip->ip_src));
-	printf("%s",inet_ntoa(ip->ip_dst));
-    printf("Got a packet");
-}
-
+void got_packet(u_char *args, const struct pcap_pkthdr *header, 
+        const u_char *packet);
 int main()
 {
-    pcap_t *handle;
-    char errbuff[PCAP_ERRBUF_SIZE];
-    char filter_exp[] = "ip proto ICMP";
-    struct bpf_program filter;
-    bpf_u_int32 net;
-    
-    handle = pcap_open_live("eth0",PCKT_LEN,1,1000,errbuff);
-    if(handle == NULL)
-    {
-        printf("%s\n",errbuff);
-        exit(1);
-    }
-    if(pcap_compile(handle,&filter,filter_exp,0,net)==-1)
-        {
-            printf("bad filter\n");
-            exit(1);
-        }
-    if(pcap_setfilter(handle,&filter)==-1)
-    {
-        printf("failed to set filter");
-        exit(1);
-    }
-    pcap_loop(handle,-1,got_packet,NULL);
-    return 0;
+  pcap_t *handle;
+  char errbuf[PCAP_ERRBUF_SIZE];
+  struct bpf_program fp;
+  char filter_exp[] = "ip proto ICMP";
+  bpf_u_int32 net;
 
+  // Step 1: Open live pcap session on NIC with name eth3
+  handle = pcap_open_live("any", PCKT_LEN, 1, 1000, errbuf); 
+
+  // Step 2: Compile filter_exp into BPF psuedo-code
+  pcap_compile(handle, &fp, filter_exp, 0, net);      
+  pcap_setfilter(handle, &fp);                             
+
+  // Step 3: Capture packets
+  pcap_loop(handle, -1, got_packet, NULL);                
+
+  pcap_close(handle);   //Close the handle 
+  return 0;
+}
+
+
+
+void got_packet(u_char *args, const struct pcap_pkthdr *header, 
+        const u_char *packet)
+{
+ 	struct sniff_ethernet* eth;
+	struct sniff_ip* ip;
+	struct sniff_icmp* icmp;
+	eth = (struct sniff_ethernet*)(packet);
+	ip=(struct sniff_ip*)(packet+SIZE_ETHERNET);
+	icmp = (struct sniff_icmp*)(packet+SIZE_ETHERNET+IP_LEN);
+	printf("%s\n",inet_ntoa(ip->ip_src));
+	printf("%s\n",inet_ntoa(ip->ip_dest));
+	printf("%d\n",icmp->icmp_type);
+	printf("%d\n",icmp->icmp_code);
 }
