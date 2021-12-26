@@ -3,20 +3,24 @@
 #include <arpa/inet.h>
 
 /* IP Header */
-typedef struct ipheader {
-  unsigned char      iph_ihl:4, //IP header length
-                     iph_ver:4; //IP version
-  unsigned char      iph_tos; //Type of service
-  unsigned short int iph_len; //IP Packet length (data + header)
-  unsigned short int iph_ident; //Identification
-  unsigned short int iph_flag:3, //Fragmentation flags
-                     iph_offset:13; //Flags offset
-  unsigned char      iph_ttl; //Time to Live
-  unsigned char      iph_protocol; //Protocol type
-  unsigned short int iph_chksum; //IP datagram checksum
-  struct  in_addr    src; //Source IP address 
-  struct  in_addr    dst;   //Destination IP address 
+typedef struct sniff_ip
+{
+	unsigned ip_vhl;			   /* version << 4 | header length >> 2 */
+	unsigned ip_tos;			   /* type of service */
+	unsigned ip_len;			   /* total length */
+	unsigned ip_id;				   /* identification */
+	unsigned ip_off;			   /* fragment offset field */
+#define IP_RF 0x8000			   /* reserved fragment flag */
+#define IP_DF 0x4000			   /* dont fragment flag */
+#define IP_MF 0x2000			   /* more fragments flag */
+#define IP_OFFMASK 0x1fff		   /* mask for fragmenting bits */
+	unsigned ip_ttl;			   /* time to live */
+	unsigned ip_p;				   /* protocol */
+	unsigned short ip_sum;		   /* checksum */
+	struct in_addr ip_src, ip_dst; /* source and dest address */
 }iph;
+#define IP_HL(ip) (((ip)->ip_vhl) & 0x0f)
+#define IP_V(ip) (((ip)->ip_vhl) >> 4)
 #define ETH_SIZE 14
 #define ETHER_ADDR_LEN 6
 /* Ethernet header */
