@@ -60,11 +60,11 @@ int main()
 {
     pcap_t *handle;
     char errbuff[PCAP_ERRBUF_SIZE];
-    char filter_exp[] = "ip proto";
+    char filter_exp[] = "ip proto ICMP";
     struct bpf_program filter;
     bpf_u_int32 net;
     
-    handle = pcap_open_live("any",1024,0,1000,errbuff);
+    handle = pcap_open_live("any",1024,1,1000,errbuff);
     if(handle == NULL)
     {
         printf("%s\n",errbuff);
