@@ -51,7 +51,8 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header,const u_char *pac
     struct sniff_ip* ip;
     struct sniff_icmp* icmp;
     ip = (struct sniff_ip*)(packet + SIZE_ETHERNET);
-    printf("%d",ip->ip_p);
+    printf("%s",inet_ntoa(ip->ip_src));
+	printf("%s",inet_ntoa(ip->ip_dst));
     printf("Got a packet");
 }
 
@@ -59,17 +60,11 @@ int main()
 {
     pcap_t *handle;
     char errbuff[PCAP_ERRBUF_SIZE];
-    char filter_exp[] = "icmp";
+    char filter_exp[] = "ip proto";
     struct bpf_program filter;
-    bpf_u_int32 subnet_mask;
     bpf_u_int32 net;
     
-    if(pcap_lookupnet("any", &net, &subnet_mask, errbuff)==1)
-    {
-        printf("%s\n",errbuff);
-        exit(1);
-    }
-    handle = pcap_open_live("any",BUFSIZ,0,1000,errbuff);
+    handle = pcap_open_live("any",1024,0,1000,errbuff);
     if(handle == NULL)
     {
         printf("%s\n",errbuff);
