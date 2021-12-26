@@ -46,9 +46,10 @@ int main()
   struct bpf_program fp;
   char filter_exp[] = "ip proto ICMP";
   bpf_u_int32 net;
+  char * dev="eth0"
 
   // Step 1: Open live pcap session on NIC with name eth3
-  handle = pcap_open_live("any", BUFSIZ, 1, 1000, errbuf); 
+  handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf); 
 
   // Step 2: Compile filter_exp into BPF psuedo-code
   pcap_compile(handle, &fp, filter_exp, 0, net);      
