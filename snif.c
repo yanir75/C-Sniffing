@@ -48,9 +48,6 @@ typedef struct sniff_icmp{
 
 void got_packet(unsigned char* buffer, int size)
 {
-char ** arr = ["Echo reply" ,"Redirect","Unassigned","Echo","Router Advertisement","Router Solicitation","Time Exceeded","Parameter Problem","Timestamp","Timestamp Reply"];	
-
-
 	// extract the IP header
     iph *ip;
     ip= (iph*)(buffer+SIZE_ETHERNET);
