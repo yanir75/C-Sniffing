@@ -64,7 +64,7 @@ int main()
     struct bpf_program filter;
     bpf_u_int32 net;
     
-    handle = pcap_open_live("any",PCKT_LEN,1,1000,errbuff);
+    handle = pcap_open_live(NULL,PCKT_LEN,1,1000,errbuff);
     if(handle == NULL)
     {
         printf("%s\n",errbuff);
