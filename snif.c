@@ -5,7 +5,8 @@
 #include <stdio.h>
 #define SIZE_ETHERNET 14
 #define ETHER_ADDR_LEN 6
-#define PCKT_LEN 1024
+#define PCKT_LEN 1518
+#define IP_LEN 20
 
 
 /* Ethernet addresses are 6 bytes */
@@ -83,11 +84,11 @@ void got_packet(u_char *args, const struct pcap_pkthdr *header,
 	struct sniff_icmp* icmp;
 	eth = (struct sniff_ethernet*)(packet);
 	ip=(struct sniff_ip*)(packet+ETHERNET_SIZE);
-	icmp = (struct sniff_icmp*)(packet+ETHERNET_SIZE+20);
-	printf("%s"\n,inet_ntoa(ip->ip_src));
-	printf("%s"\n,inet_ntoa(ip->ip_dest));
-	printf("%d"\n,icmp->icmp_type);
-	printf("%d"\n,icmp->icmp_code);
+	icmp = (struct sniff_icmp*)(packet+ETHERNET_SIZE+IP_LEN);
+	printf("%s\n",inet_ntoa(ip->ip_src));
+	printf("%s\n",inet_ntoa(ip->ip_dest));
+	printf("%d\n",icmp->icmp_type);
+	printf("%d\n",icmp->icmp_code);
 }
 
 
