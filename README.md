@@ -6,5 +6,5 @@
 gcc -o test1 myping.cpp -lstdc++
 ```
 ```
-gcc -o test snif.c -lpcap
+gcc -o test snif.c
 ```
