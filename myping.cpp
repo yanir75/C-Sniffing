@@ -44,15 +44,15 @@ unsigned short calculate_checksum(unsigned short * paddress, int len);
 //  still be sent, but do not expect to see ICMP_ECHO_REPLY in most such cases
 //  since anti-spoofing is wide-spread.
 
-#define SOURCE_IP "192.168.1.18"
 // i.e the gateway or ping to google.com for their ip-address
 #define DESTINATION_IP "8.8.8.8"
 // deleted all the if defined of windows since I am using Linux for now.
 int main ()
 {
     struct icmp icmphdr; // ICMP-header
+	// constructing my header
     char data[IP_MAXPACKET] = "This is the ping.\n";
-
+// data length
     int datalen = strlen(data) + 1;
 
     //===================
@@ -86,13 +86,17 @@ int main ()
 
     // Calculate the ICMP header checksum
     icmphdr.icmp_cksum = calculate_checksum((unsigned short *) (packet), ICMP_HDRLEN + datalen);
+	//copies the headerlen to the icmphdr
     memcpy ((packet), &icmphdr, ICMP_HDRLEN);
-
+ // creating sockaddr_in
     struct sockaddr_in dest_in;
+	// resets the sockaddr_in
     memset (&dest_in, 0, sizeof (struct sockaddr_in));
+	// putting AF_INET
     dest_in.sin_family = AF_INET;
+	// inserting google dns resolver address
     dest_in.sin_addr.s_addr = inet_addr(DESTINATION_IP);
-    // Create raw socket for IP-RAW (make IP-header by yourself)
+    // Create raw socket for ICMP packets
     int sock = -1;
     if ((sock = socket (AF_INET, SOCK_RAW, IPPROTO_ICMP)) == -1) 
     {
@@ -100,6 +104,7 @@ int main ()
         fprintf (stderr, "To create a raw socket, the process needs to be run by Admin/root user.\n\n");
         return -1;
     }
+	// calculating time using chrono of c++
     auto start = std::chrono::high_resolution_clock::now();
     // Send the packet using sendto() for sending datagrams.
     if (sendto (sock, packet,ICMP_HDRLEN + datalen, 0, (struct sockaddr *) &dest_in, sizeof (dest_in)) == -1)  
@@ -107,20 +112,28 @@ int main ()
         fprintf (stderr, "sendto() failed with error: %d", errno);
         return -1;
     }
+    //resets the packet to 0
     bzero(packet,IP_MAXPACKET);
+    //resets the dest_in)
     memset(&dest_in,0,sizeof(dest_in));
+    //using AF_INET
     dest_in.sin_family = AF_INET;
+    //Inserting the len to socket len
     socklen_t len = sizeof(dest_in);
+    //Receiving the packet from the sender
     int err = recvfrom (sock,packet,IP_MAXPACKET,0,(struct sockaddr *) &dest_in, &len);
     if(err ==-1){
         fprintf(stderr,"something went wrong: %d",errno);
     }
+	// stops calculating time
 auto end = std::chrono::high_resolution_clock::now() - start;
-
+// time in milli and nano
 long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(end).count();
 long long milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end).count();
-    char buff[INET_ADDRSTRLEN];
+    // puts the IP address of the sender to buff
+	char buff[INET_ADDRSTRLEN];
     inet_ntop( AF_INET, &dest_in.sin_addr, buff, sizeof( buff ));
+	//prints the ip time it took in milli and time it took in macro
     printf("the ip address is %s \nthe time it took in milli: %lld \nthe time it took in micro: %lld \n",buff,milliseconds,microseconds);
   // Close the raw socket descriptor.
     close(sock);
