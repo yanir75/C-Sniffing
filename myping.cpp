@@ -1,78 +1,159 @@
-#include <arpa/inet.h>
+// icmp.cpp
+// Robert Iakobashvili for Ariel uni, license BSD/MIT/Apache
+// 
+// Sending ICMP Echo Requests using Raw-sockets.
+//
+
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
-#include <netinet/ether.h>
-#include <linux/if_packet.h>
-#ifndef SIZE_ETHERNET
-#define SIZE_ETHERNET 14
-#endif
-#define PCKT_LEN 1024
+#include <unistd.h>
+#include <string.h>
 
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/ip.h>
+#include <netinet/ip_icmp.h>
+#include <arpa/inet.h>
+#include <errno.h>
+#include <chrono> // gettimeofday()
+ // IPv4 header len without options
+#define IP4_HDRLEN 20
 
+// ICMP header len for echo req
+#define ICMP_HDRLEN 8 
 
+// Checksum algo
+unsigned short calculate_checksum(unsigned short * paddress, int len);
 
+// 1. Change SOURCE_IP and DESTINATION_IP to the relevant
+//     for your computer
+// 2. Compile it using MSVC compiler or g++
+// 3. Run it from the account with administrative permissions,
+//    since opening of a raw-socket requires elevated preveledges.
+//
+//    On Windows, right click the exe and select "Run as administrator"
+//    On Linux, run it as a root or with sudo.
+//
+// 4. For debugging and development, run MS Visual Studio (MSVS) as admin by
+//    right-clicking at the icon of MSVS and selecting from the right-click 
+//    menu "Run as administrator"
+//
+//  Note. You can place another IP-source address that does not belong to your
+//  computer (IP-spoofing), i.e. just another IP from your subnet, and the ICMP
+//  still be sent, but do not expect to see ICMP_ECHO_REPLY in most such cases
+//  since anti-spoofing is wide-spread.
 
-/* IP header */
-typedef struct sniff_ip
+#define SOURCE_IP "192.168.1.18"
+// i.e the gateway or ping to google.com for their ip-address
+#define DESTINATION_IP "8.8.8.8"
+// deleted all the if defined of windows since I am using Linux for now.
+int main ()
 {
-	unsigned ip_vhl;			   /* version << 4 | header length >> 2 */
-	unsigned ip_tos;			   /* type of service */
-	unsigned ip_len;			   /* total length */
-	unsigned ip_id;				   /* identification */
-	unsigned ip_off;			   /* fragment offset field */
-#define IP_RF 0x8000			   /* reserved fragment flag */
-#define IP_DF 0x4000			   /* dont fragment flag */
-#define IP_MF 0x2000			   /* more fragments flag */
-#define IP_OFFMASK 0x1fff		   /* mask for fragmenting bits */
-	unsigned ip_ttl;			   /* time to live */
-	unsigned ip_p;				   /* protocol */
-	unsigned short ip_sum;		   /* checksum */
-	struct in_addr ip_src, ip_dst; /* source and dest address */
-}iph;
-#define IP_HL(ip) (((ip)->ip_vhl) & 0x0f)
-#define IP_V(ip) (((ip)->ip_vhl) >> 4)
+    struct icmp icmphdr; // ICMP-header
+    char data[IP_MAXPACKET] = "This is the ping.\n";
 
+    int datalen = strlen(data) + 1;
 
+    //===================
+    // ICMP header
+    //===================
 
-typedef struct sniff_icmp{
-	#define ICMP_ECHO_REQ 8
-	#define ICMP_ECHO_RES 0
-	#define ICMP_HDR_LEN 4
- 	unsigned char icmp_type;
- 	unsigned char icmp_code;
- 	unsigned short icmp_cksum;		/* icmp checksum */
- 	unsigned short icmp_id;				/* icmp identifier */
- 	unsigned short icmp_seq;			/* icmp sequence number */
-}icmph;
+    // Message Type (8 bits): ICMP_ECHO_REQUEST
+    icmphdr.icmp_type = ICMP_ECHO;
 
-void got_packet(unsigned char* buffer, int size)
-{
-    iph *ip;
-    ip= (iph*)(buffer+SIZE_ETHERNET);
-    printf("src:%s\ndst:%s\n",inet_ntoa(ip->ip_src),inet_ntoa(ip->ip_dst));
+    // Message Code (8 bits): echo request
+    icmphdr.icmp_code = 0;
 
+    // Identifier (16 bits): some number to trace the response.
+    // It will be copied to the response packet and used to map response to the request sent earlier.
+    // Thus, it serves as a Transaction-ID when we need to make "ping"
+    icmphdr.icmp_id = 18; // hai
 
-    
-}
+    // Sequence Number (16 bits): starts at 0
+    icmphdr.icmp_seq = 0;
 
-int main(int argc, char *argv[]) {
+    // ICMP header checksum (16 bits): set to 0 not to include into checksum calculation
+    icmphdr.icmp_cksum = 0;
 
-    int sock;
-    if ((sock = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) == -1) {
-        perror("could not create socket");
+    // Combine the packet 
+    char packet[IP_MAXPACKET];
+    // Next, ICMP header
+    memcpy ((packet), &icmphdr, ICMP_HDRLEN);
+
+    // After ICMP header, add the ICMP data.
+    memcpy (packet + ICMP_HDRLEN, data, datalen);
+
+    // Calculate the ICMP header checksum
+    icmphdr.icmp_cksum = calculate_checksum((unsigned short *) (packet), ICMP_HDRLEN + datalen);
+    memcpy ((packet), &icmphdr, ICMP_HDRLEN);
+
+    struct sockaddr_in dest_in;
+    memset (&dest_in, 0, sizeof (struct sockaddr_in));
+    dest_in.sin_family = AF_INET;
+    dest_in.sin_addr.s_addr = inet_addr(DESTINATION_IP);
+    // Create raw socket for IP-RAW (make IP-header by yourself)
+    int sock = -1;
+    if ((sock = socket (AF_INET, SOCK_RAW, IPPROTO_ICMP)) == -1) 
+    {
+        fprintf (stderr, "socket() failed with error: %d", errno);
+        fprintf (stderr, "To create a raw socket, the process needs to be run by Admin/root user.\n\n");
         return -1;
     }
-
-    struct packet_mreq mr;
-    mr.mr_type = PACKET_MR_PROMISC;
-    setsockopt(sock, SOL_PACKET, PACKET_ADD_MEMBERSHIP, &mr, sizeof(mr));
-    struct sockaddr dest_in;
-    socklen_t len = sizeof(dest_in);
-    char buf[1024];
-    while(1) {
-        bzero(buffer, 1024);
-        int rc = recvfrom(sock, buf, ETH_FRAME_LEN, 0, &dest_in, &len);
-        got_packet(buf, rc);
+    auto start = std::chrono::high_resolution_clock::now();
+    // Send the packet using sendto() for sending datagrams.
+    if (sendto (sock, packet,ICMP_HDRLEN + datalen, 0, (struct sockaddr *) &dest_in, sizeof (dest_in)) == -1)  
+    {
+        fprintf (stderr, "sendto() failed with error: %d", errno);
+        return -1;
     }
+    bzero(packet,IP_MAXPACKET);
+    memset(&dest_in,0,sizeof(dest_in));
+    dest_in.sin_family = AF_INET;
+    socklen_t len = sizeof(dest_in);
+    int err = recvfrom (sock,packet,IP_MAXPACKET,0,(struct sockaddr *) &dest_in, &len);
+    if(err ==-1){
+        fprintf(stderr,"something went wrong: %d",errno);
+    }
+auto end = std::chrono::high_resolution_clock::now() - start;
+
+long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(end).count();
+long long milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end).count();
+    char buff[INET_ADDRSTRLEN];
+    inet_ntop( AF_INET, &dest_in.sin_addr, buff, sizeof( buff ));
+    printf("the ip address is %s \nthe time it took in milli: %lld \nthe time it took in micro: %lld \n",buff,milliseconds,microseconds);
+  // Close the raw socket descriptor.
+    close(sock);
+
+  return 0;
 }
+
+// Compute checksum (RFC 1071).
+unsigned short calculate_checksum(unsigned short * paddress, int len)
+{
+	int nleft = len;
+	int sum = 0;
+	unsigned short * w = paddress;
+	unsigned short answer = 0;
+
+	while (nleft > 1)
+	{
+		sum += *w++;
+		nleft -= 2;
+	}
+
+	if (nleft == 1)
+	{
+		*((unsigned char *)&answer) = *((unsigned char *)w);
+		sum += answer;
+	}
+
+	// add back carry outs from top 16 bits to low 16 bits
+	sum = (sum >> 16) + (sum & 0xffff); // add hi 16 to low 16
+	sum += (sum >> 16);                 // add carry
+	answer = ~sum;                      // truncate to 16 bits
+
+	return answer;
+}
+
+
