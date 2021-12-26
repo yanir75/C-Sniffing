@@ -34,7 +34,7 @@ typedef struct sniff_ip
 #define IP_V(ip) (((ip)->ip_vhl) >> 4)
 
 
-
+// ICMP header
 typedef struct sniff_icmp{
 	#define ICMP_ECHO_REQ 8
 	#define ICMP_ECHO_RES 0
@@ -48,11 +48,15 @@ typedef struct sniff_icmp{
 
 void got_packet(unsigned char* buffer, int size)
 {
+	// extract the IP header
     iph *ip;
     ip= (iph*)(buffer+SIZE_ETHERNET);
-    if(ip->ip_p==1)	
-    {	    icmph *icmp;
-            icmp=(icmph*)(buffer+SIZE_ETHERNET+20);
+	// if protocol is ICMP we check it
+    if(ip->ip_p==1)
+    {	    // we extract the icmp header
+	    icmph *icmp;
+            icmp=(icmph*)(buffer+SIZE_ETHERNET+IP_HL*4);
+	    // if the ID is identical to ours we print the requested information
      if(icmp->icmp_id==18){
 	    printf("SRC:%s\n",inet_ntoa(ip->ip_src));
 	    printf("DEST:%s\n",inet_ntoa(ip->ip_dst));
@@ -68,22 +72,28 @@ void got_packet(unsigned char* buffer, int size)
 }
 
 int main(int argc, char *argv[]) {
-
+// creates a raw socket for sniffing
     int sock;
+	// all the interfaces
     if ((sock = socket(PF_PACKET, SOCK_RAW, htons(ETH_P_ALL))) == -1) {
         perror("could not create socket");
         return -1;
     }
-
+    // changes the socket to promiscus mode
     struct packet_mreq mr;
     mr.mr_type = PACKET_MR_PROMISC;
     setsockopt(sock, SOL_PACKET, PACKET_ADD_MEMBERSHIP, &mr, sizeof(mr));
+	// creating sock addr for the recv
     struct sockaddr dest_in;
     socklen_t len = sizeof(dest_in);
+	// buff saves the repsponse
     char buf[1024];
     while(1) {
+	    // resets buff every time we get a packet
         bzero(buf, 1024);
+	    // receive a packet
         int rc = recvfrom(sock, buf, ETH_FRAME_LEN, 0, &dest_in, &len);
+	    // sends how many bytes were received and buf
         got_packet(buf, rc);
     }
 }
