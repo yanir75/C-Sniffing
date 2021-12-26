@@ -58,9 +58,9 @@ void got_packet(unsigned char* buffer, int size)
             icmp=(icmph*)(buffer+SIZE_ETHERNET+IP_HL(ip)*4);
 	    // if the ID is identical to ours we print the requested information
      if(icmp->icmp_id==18){
-	    printf("SRC:%s\n",inet_ntoa(ip->ip_src));
-	    printf("DEST:%s\n",inet_ntoa(ip->ip_dst));
-	    printf("Type: %d, %s\n",icmp->icmp_type,arr[icmp->icmp_type]);
+	    printf("Ip source:%s\n",inet_ntoa(ip->ip_src));
+	    printf("Ip destination:%s\n",inet_ntoa(ip->ip_dst));
+	    printf("Type: %d\n",icmp->icmp_type);
 	    printf("Code: %d\n\n",icmp->icmp_code);
      }
     }
