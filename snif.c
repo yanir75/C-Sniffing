@@ -54,9 +54,10 @@ void got_packet(unsigned char* buffer, int size)
     {	    icmph *icmp;
             icmp=(icmph*)(buffer+SIZE_ETHERNET+20);
      if(icmp->icmp_id==18){
-	    printf("SRC:%s\nDEST:%s\n",inet_ntoa(ip->ip_src),inet_ntoa(ip->ip_dst));
+	    printf("SRC:%s\n",inet_ntoa(ip->ip_src));
+	    printf("DEST:%s\n",inet_ntoa(ip->ip_dst));
 	    printf("Type: %d\n",icmp->icmp_type);
-	    printf("Type: %d\n",icmp->icmp_code);
+	    printf("Code: %d\n\n",icmp->icmp_code);
      }
     }
 	
