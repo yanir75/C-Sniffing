@@ -29,8 +29,7 @@ typedef struct sniff_ip
         u_char  ip_p;                   /* protocol */
         u_short ip_sum;                 /* checksum */
         struct  in_addr ip_src,ip_dst;  /* source and dest address */
-};
-iph;
+}iph;
 #define IP_HL(ip) (((ip)->ip_vhl) & 0x0f)
 #define IP_V(ip) (((ip)->ip_vhl) >> 4)
 
@@ -72,7 +71,7 @@ int main(int argc, char *argv[]) {
     socklen_t len = sizeof(dest_in);
     char buf[1024];
     while(1) {
-        bzero(buff, 1024);
+        bzero(buf, 1024);
         int rc = recvfrom(sock, buf, ETH_FRAME_LEN, 0, &dest_in, &len);
         got_packet(buf, rc);
     }
