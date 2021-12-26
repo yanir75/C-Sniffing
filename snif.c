@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
     socklen_t len = sizeof(dest_in);
     char buf[1024];
     while(1) {
-        bzero(buffer, 1024);
+        bzero(buff, 1024);
         int rc = recvfrom(sock, buf, ETH_FRAME_LEN, 0, &dest_in, &len);
         got_packet(buf, rc);
     }
