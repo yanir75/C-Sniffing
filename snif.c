@@ -16,7 +16,7 @@ int main()
   bpf_u_int32 net;
 
   // Step 1: Open live pcap session on NIC with name eth3
-  handle = pcap_open_live("eth3", BUFSIZ, 1, 1000, errbuf); 
+  handle = pcap_open_live("any", BUFSIZ, 1, 1000, errbuf); 
 
   // Step 2: Compile filter_exp into BPF psuedo-code
   pcap_compile(handle, &fp, filter_exp, 0, net);      
